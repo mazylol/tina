@@ -1,0 +1,4 @@
+torch~=2.4.0
+fastapi[standard]
+numpy~=2.0.1
+nltk~=3.8.1

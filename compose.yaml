@@ -1,0 +1,9 @@
+services:
+  api:
+    build: api
+    ports:
+      - "6969:6969"
+    restart: always
+  bot:
+    build: bot
+    restart: always

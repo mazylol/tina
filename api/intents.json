@@ -1,0 +1,15 @@
+{
+  "intents": [
+    {
+      "tag": "just-for-startup",
+      "patterns": [
+        "hi",
+        "hello"
+      ],
+      "responses": [
+        "hey :)",
+        "hi there"
+      ]
+    }
+  ]
+}
