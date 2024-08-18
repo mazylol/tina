@@ -10,7 +10,7 @@ from fastapi import FastAPI, Request
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Load intents
-with open('intents.json', 'r') as json_data:
+with open('/data/intents.json', 'r') as json_data:
     intents = json.load(json_data)
 
 # Function to load the model
@@ -31,7 +31,7 @@ def load_model(file_path: str):
 
 
 # Initial load of the model
-model, all_words, tags = load_model("data.pth")
+model, all_words, tags = load_model("/data/data.pth")
 
 app = FastAPI()
 
@@ -67,9 +67,9 @@ def retrain():
 
     # Reload the model after training
     global model, all_words, tags, intents
-    model, all_words, tags = load_model("data.pth")
+    model, all_words, tags = load_model("/data/data.pth")
 
-    with open('intents.json', 'r') as json_data:
+    with open('/data/intents.json', 'r') as json_data:
         intents = json.load(json_data)
 
     return "Model retrained and reloaded"
@@ -78,12 +78,12 @@ def retrain():
 async def new_intent(request: Request):
     req_json = await request.json()
 
-    with open('intents.json', 'r') as json_data:
+    with open('/data/intents.json', 'r') as json_data:
         intents = json.load(json_data)
 
     intents["intents"].append(req_json)
 
-    f = open('intents.json', 'w')
+    f = open('/data/intents.json', 'w')
     f.write(json.dumps(intents))
     f.close()
 
@@ -91,19 +91,19 @@ async def new_intent(request: Request):
 async def new_response(request: Request):
     req_json = await request.json()
 
-    with open('intents.json', 'r') as json_data:
+    with open('/data/intents.json', 'r') as json_data:
         intents = json.load(json_data)
 
     for intent in intents['intents']:
         if req_json["tag"] == intent["tag"]:
             intent["responses"].append(req_json["response"])
 
-    f = open("intents.json", "w")
+    f = open("/data/intents.json", "w")
     f.write(json.dumps(intents))
     f.close()
 
 @app.get("/get/intents")
 async def get_intents():
-    with open('intents.json', 'r') as json_data:
+    with open('/data/intents.json', 'r') as json_data:
         intents = json.load(json_data)
         return intents

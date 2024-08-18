@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY ./chat.py /code
 COPY ./train.py /code
-COPY ./intents-default.json /code/intents.json
+COPY ./intents-default.json /data/intents.json
 
 RUN python train.py
 

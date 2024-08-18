@@ -41,7 +41,7 @@ def stem(word):
     return stemmer.stem(word.lower())
 
 def train():
-    with open('intents.json', 'r') as f:
+    with open('/data/intents.json', 'r') as f:
         intents = json.load(f)
 
     all_words = []
@@ -139,7 +139,7 @@ def train():
         "tags": tags
     }
 
-    file = "data.pth"
+    file = "/data/data.pth"
     torch.save(data, file)
     print(f'training complete. file saved to {file}')
 

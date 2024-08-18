@@ -3,7 +3,12 @@ services:
     build: api
     ports:
       - "6969:6969"
+    volumes:
+      - persistance:/data
     restart: always
   bot:
     build: bot
     restart: always
+
+volumes:
+  persistance:
