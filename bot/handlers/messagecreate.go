@@ -6,8 +6,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
-	"time"
 	"tina/structs"
 
 	"github.com/bwmarrin/discordgo"
@@ -16,6 +16,17 @@ import (
 func NewMessage(s *discordgo.Session, m *discordgo.MessageCreate, state *structs.State) {
 	if m.Author.ID == s.State.User.ID || m.Author.Bot {
 		return
+	}
+
+	once := false
+	for state.Training {
+		if !once {
+			log.Println("Waiting for model to finish training")
+			s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+				Flags: discordgo.MessageFlags(discordgo.InteractionResponseDeferredChannelMessageWithSource),
+			})
+			once = true
+		}
 	}
 
 	botMentioned := false
@@ -32,10 +43,12 @@ func NewMessage(s *discordgo.Session, m *discordgo.MessageCreate, state *structs
 		return
 	}
 
-	messageContent := strings.ReplaceAll(m.Content, mentionString, "")
-	messageContent = strings.TrimSpace(messageContent)
+	messageContent := strings.ReplaceAll(m.Content, mentionString, "") // remove mention
+	messageContent = strings.TrimSpace(messageContent)                 // trim whitespace
+	escapedContent := strings.ReplaceAll(messageContent, `"`, `\"`)    // escape quotes
+	result := `"` + escapedContent + `"`
 
-    resp, err := http.Post(fmt.Sprintf("http://api:6969"), "application/json", strings.NewReader(fmt.Sprintf("{\"query\": \"%s\"}", messageContent)))
+	resp, err := http.Post(fmt.Sprintf("http://api:6969"), "application/json", strings.NewReader(fmt.Sprintf("{\"query\": %s}", result)))
 	if err != nil {
 		log.Printf("Failed to get response from api: %v", err)
 	}
@@ -53,13 +66,18 @@ func NewMessage(s *discordgo.Session, m *discordgo.MessageCreate, state *structs
 	}
 }
 
-func IntentAppend(s *discordgo.Session, m *discordgo.MessageCreate) {
+func IntentAppend(s *discordgo.Session, m *discordgo.MessageCreate, state *structs.State) {
 	if m.Author.ID == s.State.User.ID || m.Author.Bot {
 		return
 	}
 
+	// get rid of mentions
+	mentionRegex := regexp.MustCompile(`<@!?[0-9]+>`)
+	m.Content = mentionRegex.ReplaceAllString(m.Content, "")
+	m.Content = strings.TrimSpace(m.Content)
+
 	if m.MessageReference != nil {
-        resp, err := http.Get("http://api:6969/get/intents")
+		resp, err := http.Get("http://api:6969/get/intents")
 		if err != nil {
 			log.Printf("Cannot get intents: %v", err)
 			return
@@ -99,7 +117,9 @@ func IntentAppend(s *discordgo.Session, m *discordgo.MessageCreate) {
 				}
 
 				// Append the new response
-                http.Post("http://api:6969/new/response", "application/json", strings.NewReader(fmt.Sprintf("{\"tag\": \"%s\", \"response\": \"%s\"}", intent.Tag, m.Content)))
+				http.Post("http://api:6969/new/response", "application/json", strings.NewReader(fmt.Sprintf("{\"tag\": \"%s\", \"response\": \"%s\"}", intent.Tag, m.Content)))
+
+                updateMessagesSinceTraining(state)
 
 				return
 			}
@@ -114,10 +134,18 @@ func IntentAppend(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		str, err := json.Marshal(intent)
 
-        http.Post("http://api:6969/new/intent", "application/json", strings.NewReader(string(str)))
+		http.Post("http://api:6969/new/intent", "application/json", strings.NewReader(string(str)))
 
-        time.Sleep(100 * time.Millisecond)
+		updateMessagesSinceTraining(state)
+	}
+}
 
-        http.Get("http://api:6969/retrain")
+func updateMessagesSinceTraining(state *structs.State) {
+	state.MessagesSinceTraining += 1
+	if state.MessagesSinceTraining > 5 {
+		state.Training = true
+		http.Get("http://api:6969/retrain")
+		state.Training = false
+		state.MessagesSinceTraining = 0 // Reset the counter after retraining
 	}
 }

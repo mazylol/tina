@@ -27,7 +27,7 @@ func init() {
 	s.Identify.Intents |= discordgo.IntentsAll
 
 	s.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		handlers.IntentAppend(s, m)
+		handlers.IntentAppend(s, m, &state)
         handlers.NewMessage(s, m, &state)
 	})
 

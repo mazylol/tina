@@ -1,5 +1,6 @@
 package structs
 
 type State struct {
-	messagesSinceResponse int
+    MessagesSinceTraining int
+    Training bool
 }

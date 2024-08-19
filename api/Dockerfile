@@ -1,4 +1,14 @@
-FROM python:3.12.4
+FROM nvidia/cuda:12.5.0-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y \
+        git \
+        python3-pip \
+        python3-dev \
+        python3-opencv \
+        libglib2.0-0
 
 WORKDIR /code
 
@@ -10,7 +20,7 @@ COPY ./chat.py /code
 COPY ./train.py /code
 COPY ./intents-default.json /data/intents.json
 
-RUN python train.py
+RUN python3 train.py
 
 EXPOSE 6969
 
